@@ -8,11 +8,17 @@ intents = discord.Intents.default()
 bot = discord.Bot()
 
 STATUS_NAME_LIST = []
+CATEGORY_OPTIONS = ["c", "s"]
 
 async def status_name_searcher(ctx: discord.AutocompleteContext):
-    return [
-        status_name for status_name in STATUS_NAME_LIST if status_name.startswith(ctx.value)
-    ]
+  return [
+    status_name for status_name in STATUS_NAME_LIST if status_name.startswith(ctx.value)
+  ]
+
+async def get_categories(ctx: discord.AutocompleteContext):
+  return [
+    category for category in CATEGORY_OPTIONS if category.startswith(ctx.value.lower())
+  ]
 
 @bot.event
 async def on_ready():
@@ -22,13 +28,18 @@ async def on_ready():
 async def test_command(interaction: discord.Interaction):
   await interaction.response.send_message("てすと！", ephemeral=True)
 
-@bot.slash_command(name="sts")
+@bot.slash_command(name="sts", description="バフ・デバフを日本語で入力・選択可能。")
 @option(
-    "status_name",
-    description="バフ・デバフを日本語で入力/選択できます",
-    autocomplete=status_name_searcher,
+  "status_name",
+  description="バフ・デバフを入力/選択ください。",
+  autocomplete=status_name_searcher,
 )
-async def find_status(ctx: discord.ApplicationContext, status_name: str):
+@option("category",
+  description="c:キャラクター,s:シップ (デフォルトはc)",
+  autocomplete=get_categories,
+  required=False,
+)
+async def find_status(ctx: discord.ApplicationContext, status_name: str, category: str):
   await ctx.defer()
   result: str = ""
 
@@ -36,7 +47,10 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str):
   my_embed: discord.Embed = None
 
   try:
-    cursor = collection.find(filter={'statusName': status_name, 'category': 'c'})
+    if category is None or category == "":
+      cursor = collection.find(filter={'statusName': status_name, 'category': 'c'})
+    else:
+      cursor = collection.find(filter={'statusName': status_name, 'category': category})
 
     i: int = 0
     page: int = 1
@@ -44,12 +58,13 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str):
       if my_embed is None:
         my_embed = discord.Embed(
           title=f'{doc["statusName"]} -{doc["statusType"]}- (page {page})',
-          description='',
+          description="",
           color=0x00ff00)
 
       my_embed.add_field(name=doc["unitName"],
         value=f'{doc["skillType"]} ： {doc["skillName"]}',
         inline=False)
+      before_name = name = doc["unitName"]
       if i % 24 == 0 and i != 0:
         embeds.append(my_embed)
         my_embed = None
@@ -58,6 +73,12 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str):
       i = i + 1
     
     if my_embed is not None:
+      embeds.append(my_embed)
+    if i == 0:
+      my_embed = discord.Embed(
+          title="該当データなし",
+          description="",
+          color=0x00ff00)
       embeds.append(my_embed)
     
   except StopIteration:
