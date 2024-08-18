@@ -10,14 +10,13 @@ bot = discord.Bot()
 STATUS_NAME_LIST = []
 
 async def status_name_searcher(ctx: discord.AutocompleteContext):
-    #print(ctx.value)
     return [
         status_name for status_name in STATUS_NAME_LIST if status_name.startswith(ctx.value)
     ]
 
 @bot.event
 async def on_ready():
-  print("jstat Bot起動完了！")
+  print("JJ-8 Activated!!")
 
 @bot.slash_command(name="test", description="テストコマンドです。")
 async def test_command(interaction: discord.Interaction):
@@ -68,8 +67,6 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str):
       await ctx.send(embed=embed)
     #await ctx.send(embed=my_embed)
     await ctx.followup.send("---")
-
-  #embed.add_field(name='Unit Info', value=result, inline=False)
   
 ##################
 # グローバル処理
