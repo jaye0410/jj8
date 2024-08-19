@@ -54,17 +54,24 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
 
     i: int = 0
     page: int = 1
+    before_name = ""
     for doc in cursor:
       if my_embed is None:
         my_embed = discord.Embed(
-          title=f'{doc["statusName"]} -{doc["statusType"]}- (page {page})',
+          title=f'{doc["statusName"]} ({doc["statusType"]}) - page {page} -',
           description="",
           color=0x00ff00)
 
-      my_embed.add_field(name=doc["unitName"],
-        value=f'{doc["skillType"]} ： {doc["skillName"]}',
+      if doc["unitName"] == before_name:
+        current_name = "|"
+      else:
+        current_name = f'__{doc["unitName"]}__'
+      my_embed.add_field(name=current_name,
+        value=f'- {doc["skillType"]} ： {doc["skillName"]}',
         inline=False)
-      before_name = name = doc["unitName"]
+      
+      before_name = doc["unitName"]
+
       if i % 24 == 0 and i != 0:
         embeds.append(my_embed)
         my_embed = None

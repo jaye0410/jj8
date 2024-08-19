@@ -21,3 +21,10 @@
 
 # gitへのPUSH
 `git push -u origin master`
+
+***
+
+# 権限 OAuth2
+* Send Messages
+* Send TTS Messages
+* Embed Links
