@@ -91,7 +91,8 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
       await ctx.send(embed=embed)
 
     if data_count == 0:
-      await ctx.followup.send('該当データなし')
+      await ctx.followup.send(
+        f'__該当データなし__{os.linesep}* categoryオプションの指定をお試しください。{os.linesep} - c:キャラクター{os.linesep} - s: シップ')
     else:
       await ctx.followup.send(f'{data_count}件のデータがヒット')
   
