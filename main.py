@@ -55,6 +55,7 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
     i: int = 0
     page: int = 1
     before_name = ""
+    data_count = 0
     for doc in cursor:
       if my_embed is None:
         my_embed = discord.Embed(
@@ -63,7 +64,7 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
           color=0x00ff00)
 
       if doc["unitName"] == before_name:
-        current_name = "|"
+        current_name = "---"
       else:
         current_name = f'__{doc["unitName"]}__'
       my_embed.add_field(name=current_name,
@@ -81,20 +82,18 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
     
     if my_embed is not None:
       embeds.append(my_embed)
-    if i == 0:
-      my_embed = discord.Embed(
-          title="該当データなし",
-          description="",
-          color=0x00ff00)
-      embeds.append(my_embed)
+      data_count = i
     
   except StopIteration:
     pass
   finally:
     for embed in embeds:
       await ctx.send(embed=embed)
-    #await ctx.send(embed=my_embed)
-    await ctx.followup.send("---")
+
+    if data_count == 0:
+      await ctx.followup.send("該当データなし")
+    else:
+      await ctx.followup.send(f"{data_count}件のデータがヒット")
   
 ##################
 # グローバル処理
