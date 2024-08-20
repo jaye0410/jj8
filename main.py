@@ -8,7 +8,7 @@ intents = discord.Intents.default()
 bot = discord.Bot()
 
 STATUS_NAME_LIST = []
-CATEGORY_OPTIONS = ["c", "s"]
+CATEGORY_OPTIONS = ['c', 's']
 
 async def status_name_searcher(ctx: discord.AutocompleteContext):
   return [
@@ -22,56 +22,56 @@ async def get_categories(ctx: discord.AutocompleteContext):
 
 @bot.event
 async def on_ready():
-  print("JJ-8 Activated!!")
+  print('JJ-8 Activated!!')
 
-@bot.slash_command(name="test", description="テストコマンドです。")
+@bot.slash_command(name='test', description='テストコマンドです。')
 async def test_command(interaction: discord.Interaction):
-  await interaction.response.send_message("てすと！", ephemeral=True)
+  await interaction.response.send_message('てすと！', ephemeral=True)
 
-@bot.slash_command(name="sts", description="バフ・デバフを日本語で入力・選択可能。")
+@bot.slash_command(name='sts', description='バフ・デバフを日本語で入力・選択可能。')
 @option(
-  "status_name",
-  description="バフ・デバフを入力/選択ください。",
+  'status_name',
+  description='バフ・デバフを入力/選択ください。',
   autocomplete=status_name_searcher,
 )
-@option("category",
-  description="c:キャラクター,s:シップ (デフォルトはc)",
+@option('category',
+  description='c:キャラクター,s:シップ (デフォルトはc)',
   autocomplete=get_categories,
   required=False,
 )
 async def find_status(ctx: discord.ApplicationContext, status_name: str, category: str):
   await ctx.defer()
-  result: str = ""
+  result: str = ''
 
   embeds = []
   my_embed: discord.Embed = None
 
   try:
-    if category is None or category == "":
+    if category is None or category == '':
       cursor = collection.find(filter={'statusName': status_name, 'category': 'c'})
     else:
       cursor = collection.find(filter={'statusName': status_name, 'category': category})
 
     i: int = 0
     page: int = 1
-    before_name = ""
+    before_name = ''
     data_count = 0
     for doc in cursor:
       if my_embed is None:
         my_embed = discord.Embed(
           title=f'{doc["statusName"]} ({doc["statusType"]}) - page {page} -',
-          description="",
+          description='',
           color=0x00ff00)
 
-      if doc["unitName"] == before_name:
-        current_name = "---"
+      if doc['unitName'] == before_name:
+        current_name = '---'
       else:
-        current_name = f'__{doc["unitName"]}__'
+        current_name = f'__{doc["unitName"]}__{os.linesep}---'
       my_embed.add_field(name=current_name,
         value=f'- {doc["skillType"]} ： {doc["skillName"]}',
         inline=False)
       
-      before_name = doc["unitName"]
+      before_name = doc['unitName']
 
       if i % 24 == 0 and i != 0:
         embeds.append(my_embed)
@@ -91,9 +91,9 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
       await ctx.send(embed=embed)
 
     if data_count == 0:
-      await ctx.followup.send("該当データなし")
+      await ctx.followup.send('該当データなし')
     else:
-      await ctx.followup.send(f"{data_count}件のデータがヒット")
+      await ctx.followup.send(f'{data_count}件のデータがヒット')
   
 ##################
 # グローバル処理
