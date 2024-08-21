@@ -46,6 +46,7 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
   embeds = []
   my_embed: discord.Embed = None
 
+  data_count = 0
   try:
     if category is None or category == '':
       cursor = collection.find(filter={'statusName': status_name, 'category': 'c'})
@@ -55,7 +56,7 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
     i: int = 0
     page: int = 1
     before_name = ''
-    data_count = 0
+    
     for doc in cursor:
       if my_embed is None:
         my_embed = discord.Embed(
