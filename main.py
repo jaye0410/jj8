@@ -49,9 +49,11 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
   data_count = 0
   try:
     if category is None or category == '':
-      cursor = collection.find(filter={'statusName': status_name, 'category': 'c'})
+      cursor = collection_status.find(
+        filter={'statusName': status_name, 'category': 'c'})
     else:
-      cursor = collection.find(filter={'statusName': status_name, 'category': category})
+      cursor = collection_status.find(
+        filter={'statusName': status_name, 'category': category})
 
     i: int = 0
     page: int = 1
@@ -108,10 +110,10 @@ config = dotenv_values(dotenv_path=path)
 uri = config['MONGODB_URI']
 db_client = MongoClient(uri)
 db = db_client['swgoh']
-collection = db[config['COLLECTION_NAME']]
+collection_status = db['status']
 
 # autocomplete用のリストを作成
-STATUS_NAME_LIST = list(collection.distinct('statusName'))
+STATUS_NAME_LIST = list(collection_status.distinct('statusName'))
 
 # Bot実行
 bot.run(config['TOKEN'])
