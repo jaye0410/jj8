@@ -67,7 +67,7 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
       if doc['unitName'] == before_name:
         current_name = '---'
       else:
-        current_name = f'👉{doc["unitName"]}{os.linesep}---'
+        current_name = f'==={os.linesep}👉{doc["unitName"]}{os.linesep}---'
       my_embed.add_field(name=current_name,
         value=f'- {doc["skillType"]} ： {doc["skillName"]}',
         inline=False)
