@@ -12,7 +12,7 @@
 ## mongodb使用に必要
 `pip install pymongo`
 
-## optionのimportに必要
+## option (discord.command) のimportに必要
 `pip install git+https://github.com/Pycord-Development/pycord`
 
 ***
