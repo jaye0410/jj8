@@ -41,7 +41,6 @@ async def test_command(interaction: discord.Interaction):
 )
 async def find_status(ctx: discord.ApplicationContext, status_name: str, category: str):
   await ctx.defer()
-  result: str = ''
 
   embeds = []
   my_embed: discord.Embed = None
@@ -88,7 +87,7 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
 
     if data_count == 0:
       await ctx.followup.send(
-        f'__該当データなし__{os.linesep}* categoryオプションの指定をお試しください。{os.linesep} - c:キャラクター{os.linesep} - s: シップ')
+        f'__該当データなし__{os.linesep}categoryオプションの指定をお試しください。{os.linesep} - c:キャラクター{os.linesep} - s: シップ')
     else:
       await ctx.followup.send(f'{data_count}件のデータがヒット')
   
