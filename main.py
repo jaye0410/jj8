@@ -9,9 +9,6 @@ from pymongo import MongoClient
 intents = discord.Intents.default()
 bot = discord.Bot()
 
-STATUS_NAME_LIST = []
-CATEGORY_OPTIONS = ['c', 's']
-
 async def status_name_searcher(ctx: discord.AutocompleteContext):
   STATUS_NAME_LIST = list(db['status'].distinct('statusName'))
   return [
@@ -20,7 +17,7 @@ async def status_name_searcher(ctx: discord.AutocompleteContext):
 
 async def get_categories(ctx: discord.AutocompleteContext):
   return [
-    category for category in CATEGORY_OPTIONS if category.startswith(ctx.value.lower())
+    category for category in ['c', 's'] if category.startswith(ctx.value.lower())
   ]
 
 @bot.event
