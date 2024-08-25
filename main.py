@@ -20,11 +20,87 @@ async def get_categories(ctx: discord.AutocompleteContext):
     category for category in ['c', 's'] if category.startswith(ctx.value.lower())
   ]
 
+async def get_phase_list(ctx: discord.AutocompleteContext):
+  return [
+    phase for phase in ['1', '2', '3', '4', '5', '6'] if phase == ctx.value
+  ]
+
+async def get_player_info(ally_code):
+  loc = f'https://swgoh.gg/api/player/{ally_code}/'
+  header = {"content-type": "application/json"}
+  r = requests.get(loc, headers=header)
+  all_data = r.json()
+  player_info = all_data['data']
+  
+  return player_info
+
+async def get_guild_info(guild_id):
+  loc = f'https://swgoh.gg/api/guild-profile/{guild_id}/'
+  header = {"content-type": "application/json"}
+  r = requests.get(loc, headers=header)
+  guild_info = r.json()
+  return guild_info['data']
+
 @bot.event
 async def on_ready():
   print('JJ-8 Activated!!')
 
+#######################################
+## RoteTB シミュレータ
+######################################
+@bot.slash_command(name='gtb', description='RotE TBの指定フェーズをシミュレートします。')
+@option(
+  'phase',
+  description='フェーズを入力・選択。',
+  autocomplete=get_phase_list,
+)
+async def simulate_tb(ctx: discord.ApplicationContext, phase: int):
+  await ctx.defer()
+  cursor = db['player'].find(filter={'userName': ctx.author.name})
+  
+  ally_code: str = ''
+  for doc in cursor:
+    ally_code = doc['allyCode']
+  
+  if ally_code == '':
+    await ctx.followup.send('```ERROR: 同盟コードの事前登録が必要です。```')
+    return
+  
+  player_info = await get_player_info(ally_code)
+
+  guild_info = await get_guild_info(player_info['guild_id'])
+  guild_name = guild_info['name']
+  guild_gp = guild_info['galactic_power']
+  
+  line: str = f'【フェーズ {phase}】 ポイント詳細{os.linesep}----------{os.linesep}'
+  totalPoints = 0
+  cursor = db['tbRote'].find(filter={'phase': phase})
+  for doc in cursor:
+    line = line + f'[{doc["sideAbbr"]}]:{doc["planetJp"]}{os.linesep}'
+    line = line + f'★1:{doc["star1"]:>11,}|★2:{doc["star2"]:>11,}|★3:{doc["star3"]:>11,}{os.linesep}'
+    totalPoints = totalPoints + doc["star3"]
+  
+  line = line + f'----------{os.linesep}合計: {totalPoints:>11,}'
+  await ctx.send(f'```{line}```')
+
+  my_embed = discord.Embed(
+    title=f'RoteTB【フェーズ {phase}】',
+    description=f'ギルド名: {guild_name} | 総GP: {guild_gp}',
+    color=0x00ff00)
+  
+  shortage = guild_gp - totalPoints
+  if (shortage < 0):
+    my_embed.add_field(name=f'ギルドGPが不足しています。',
+      value=f'不足分: {shortage:>11,}', inline=False)
+  else:
+    my_embed.add_field(name=f'ギルドGPのみで全エリアの★3取得可能です。',
+      value=f'超過分: {shortage:>11,}', inline=False)
+  
+  await ctx.followup.send(embed=my_embed)
+
+#######################################
 ## 同盟コード登録
+######################################
 @bot.slash_command(name='register', description='自身の同盟コードを登録します。')
 @option(
   'ally_code',
@@ -41,13 +117,9 @@ async def register_ally_code(ctx: discord.ApplicationContext, ally_code: str):
     await ctx.followup.send('```ERROR: 登録済の同盟コードです！```')
     return
 
-  loc = f'https://swgoh.gg/api/player/{ally_code}/'
-  header = {"content-type": "application/json"}
-  r = requests.get(loc, headers=header)
-  all_data = r.json()
-  player_data = all_data['data']
-  guild_id = player_data['guild_id']
-  guild_name = player_data['guild_name']
+  player_info = await get_player_info(ally_code)
+  guild_id = player_info['guild_id']
+  guild_name = player_info['guild_name']
 
   db['player'].insert_one(
     {
@@ -60,8 +132,10 @@ async def register_ally_code(ctx: discord.ApplicationContext, ally_code: str):
   )
 
   await ctx.followup.send(f'SUCCESS: 同盟コード({ally_code})の登録が完了しました！')
-
+ 
+#######################################
 ## 同盟コード登録解除
+#######################################
 @bot.slash_command(name='unregister', description='同盟コードの登録を解除します。')
 @option(
   'ally_code',
@@ -80,7 +154,9 @@ async def unregister_ally_code(ctx: discord.ApplicationContext, ally_code: str):
   db['player'].delete_one({'allyCode': ally_code})
   await ctx.followup.send(f'SUCCESS: 同盟コード({ally_code})の登録が解除されました！')
 
+#######################################
 ## ギルドメンバー同盟コード取得
+#######################################
 @bot.slash_command(name='allys', description='全ギルドメンバーの同盟コードを取得します。同盟コードの事前登録が必要です。')
 async def get_members_ally_code(ctx: discord.ApplicationContext):
   await ctx.defer()
@@ -95,20 +171,17 @@ async def get_members_ally_code(ctx: discord.ApplicationContext):
     await ctx.followup.send('```ERROR: 同盟コードの事前登録が必要です。```')
     return
   
-  loc = f'https://swgoh.gg/api/player/{ally_code}/'
-  header = {"content-type": "application/json"}
-  r = requests.get(loc, headers=header)
-  all_data = r.json()
-  player_data = all_data['data']
-  guild_id = player_data["guild_id"]
+  player_info = await get_player_info(ally_code)
+  guild_id = player_info["guild_id"]
 
-  loc = f'https://swgoh.gg/api/guild-profile/{guild_id}/'
-  r = requests.get(loc, headers=header)
-  all_data = r.json()
-  members = all_data['data']['members']
+  # loc = f'https://swgoh.gg/api/guild-profile/{guild_id}/'
+  # r = requests.get(loc, headers=header)
+  # all_data = r.json()
+  guild_info = await get_guild_info(guild_id)
+  members = guild_info['members']
 
   my_embed = discord.Embed(
-    title=f'ギルド名: {player_data["guild_name"]}{os.linesep}ギルドID: {guild_id}',
+    title=f'ギルド名: {player_info["guild_name"]}{os.linesep}ギルドID: {guild_id}',
     description='',
     color=0x00ff00)
   
