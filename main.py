@@ -13,6 +13,7 @@ STATUS_NAME_LIST = []
 CATEGORY_OPTIONS = ['c', 's']
 
 async def status_name_searcher(ctx: discord.AutocompleteContext):
+  STATUS_NAME_LIST = list(db['status'].distinct('statusName'))
   return [
     status_name for status_name in STATUS_NAME_LIST if status_name.startswith(ctx.value)
   ]
@@ -36,7 +37,7 @@ async def register_ally_code(ctx: discord.ApplicationContext, ally_code: str):
   await ctx.defer()
 
   # update({"name": "hoge"}, {"$set": {"age": 25}})
-  count: int = collection_player.count_documents(
+  count: int = db['player'].count_documents(
     filter={'allyCode': ally_code}
   )
   if count > 0:
@@ -51,7 +52,7 @@ async def register_ally_code(ctx: discord.ApplicationContext, ally_code: str):
   guild_id = player_data['guild_id']
   guild_name = player_data['guild_name']
 
-  collection_player.insert_one(
+  db['player'].insert_one(
     {
       'displayName': ctx.author.display_name,
       'userName': ctx.author.name,
@@ -72,14 +73,14 @@ async def register_ally_code(ctx: discord.ApplicationContext, ally_code: str):
 async def unregister_ally_code(ctx: discord.ApplicationContext, ally_code: str):
   await ctx.defer()
 
-  count: int = collection_player.count_documents(
+  count: int = db['player'].count_documents(
     filter={'allyCode': ally_code}
   )
   if count == 0:
     await ctx.followup.send('```ERROR: 存在しない同盟コードです！```')
     return
 
-  collection_player.delete_one({'allyCode': ally_code})
+  db['player'].delete_one({'allyCode': ally_code})
   await ctx.followup.send(f'SUCCESS: 同盟コード({ally_code})の登録が解除されました！')
 
 ## ギルドメンバー同盟コード取得
@@ -87,7 +88,7 @@ async def unregister_ally_code(ctx: discord.ApplicationContext, ally_code: str):
 async def get_members_ally_code(ctx: discord.ApplicationContext):
   await ctx.defer()
 
-  cursor = collection_player.find(filter={'userName': ctx.author.name})
+  cursor = db['player'].find(filter={'userName': ctx.author.name})
   
   ally_code: str = ''
   for doc in cursor:
@@ -141,10 +142,10 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
 
   try:
     if category is None or category == '':
-      cursor = collection_status.find(
+      cursor = db['status'].find(
         filter={'statusName': status_name, 'category': 'c'})
     else:
-      cursor = collection_status.find(
+      cursor = db['status'].find(
         filter={'statusName': status_name, 'category': category})
 
     my_embed: discord.Embed = None
@@ -186,14 +187,10 @@ path = os.path.join(dirname, '.env')
 config = dotenv_values(dotenv_path=path)
 
 # DB, collection設定
-uri = config['MONGODB_URI']
-db_client = MongoClient(uri)
+db_client = MongoClient(config['MONGODB_URI'])
 db = db_client['swgoh']
-collection_status = db['status']
-collection_player = db['player']
-
-# autocomplete用のリストを作成
-STATUS_NAME_LIST = list(collection_status.distinct('statusName'))
+#collection_status = db['status']
+#collection_player = db['player']
 
 # Bot実行
 bot.run(config['TOKEN'])
