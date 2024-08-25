@@ -158,7 +158,6 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
         title = f'__{doc["statusName"]}__ ({doc["statusType"]})'
 
       line = line + f'```{doc["unitName"]} ({doc["skillType"]}) {doc["skillName"]}```'
-        
       i = i + 1
     
   except StopIteration:
@@ -166,16 +165,14 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
     pass
   finally:
     if i == 0:
-      my_embed = discord.Embed(
-        title=f'__該当データなし__',
-        description=f'categoryオプションをお試しください。{os.linesep} - c: キャラクター{os.linesep}- s: シップ',
-        color=0x00ff00)
+      title = '__該当データなし__'
+      description = f'categoryオプションをお試しください。{os.linesep} - c: キャラクター{os.linesep}- s: シップ'
     else:
       await ctx.send(line)
-      my_embed = discord.Embed(
-        title=f'{title}',
-        description=f'{i}件のデータがヒット',
-        color=0x00ff00)
+      title = f'{title}'
+      description = f'{i}件のデータがヒット'
+
+    my_embed = discord.Embed(title=f'{title}', description=description, color=0x00ff00)
 
     await ctx.followup.send(embed=my_embed)
   
