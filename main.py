@@ -189,8 +189,6 @@ config = dotenv_values(dotenv_path=path)
 # DB, collection設定
 db_client = MongoClient(config['MONGODB_URI'])
 db = db_client['swgoh']
-#collection_status = db['status']
-#collection_player = db['player']
 
 # Bot実行
 bot.run(config['TOKEN'])
