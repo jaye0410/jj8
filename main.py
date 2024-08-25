@@ -48,7 +48,7 @@ async def on_ready():
 #######################################
 ## RoteTB シミュレータ
 ######################################
-@bot.slash_command(name='gtb', description='RotE TBの指定フェーズをシミュレートします。')
+@bot.slash_command(name='rotetb', description='RotE TBの指定フェーズをシミュレートします。')
 @option(
   'phase',
   description='フェーズを入力・選択。',
