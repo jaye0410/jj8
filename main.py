@@ -139,10 +139,6 @@ async def get_members_ally_code(ctx: discord.ApplicationContext):
 async def find_status(ctx: discord.ApplicationContext, status_name: str, category: str):
   await ctx.defer()
 
-  embeds = []
-  my_embed: discord.Embed = None
-
-  data_count = 0
   try:
     if category is None or category == '':
       cursor = collection_status.find(
@@ -151,42 +147,36 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
       cursor = collection_status.find(
         filter={'statusName': status_name, 'category': category})
 
+    my_embed: discord.Embed = None
     i: int = 0
-    page: int = 1
+    title: str = ''
+    line: str = ''
     
     for doc in cursor:
       if my_embed is None:
-        my_embed = discord.Embed(
-          title=f'__{doc["statusName"]}__ ({doc["statusType"]}) - page {page} -',
-          description='',
-          color=0x00ff00)
+        title = f'__{doc["statusName"]}__ ({doc["statusType"]})'
 
-      my_embed.add_field(name='--\u200b',
-        value=f'```{doc["unitName"]} ({doc["skillType"]}) {doc["skillName"]}```',
-        inline=False)
-
-      if i % 24 == 0 and i != 0:
-        embeds.append(my_embed)
-        my_embed = None
-        page = page + 1
+      line = line + f'```{doc["unitName"]} ({doc["skillType"]}) {doc["skillName"]}```'
         
       i = i + 1
     
-    if my_embed is not None:
-      embeds.append(my_embed)
-      data_count = i
-    
   except StopIteration:
+    await ctx.followup.send('ERROR: Unexpected exception occured.')
     pass
   finally:
-    for embed in embeds:
-      await ctx.send(embed=embed)
-
-    if data_count == 0:
-      await ctx.followup.send(
-        f'__該当データなし__{os.linesep}categoryオプションの指定をお試しください。{os.linesep} - c:キャラクター{os.linesep} - s: シップ')
+    if i == 0:
+      my_embed = discord.Embed(
+        title=f'__該当データなし__',
+        description=f'categoryオプションをお試しください。{os.linesep} - c: キャラクター{os.linesep}- s: シップ',
+        color=0x00ff00)
     else:
-      await ctx.followup.send(f'{data_count}件のデータがヒット')
+      await ctx.send(line)
+      my_embed = discord.Embed(
+        title=f'{title}',
+        description=f'{i}件のデータがヒット',
+        color=0x00ff00)
+
+    await ctx.followup.send(embed=my_embed)
   
 ##################
 # グローバル処理
