@@ -76,7 +76,8 @@ async def simulate_tb(ctx: discord.ApplicationContext, phase: int):
   totalPoints = 0
   cursor = db['tbRote'].find(filter={'phase': phase})
   for doc in cursor:
-    line = line + f'[{doc["sideAbbr"]}]:{doc["planetJp"]}{os.linesep}'
+    planet_jp = doc["planetJp"] if doc["isBonus"] == 0 else f'{doc["planetJp"]}(ボーナスエリア)'
+    line = line + f'[{doc["sideAbbr"]}]:{planet_jp}{os.linesep}'
     line = line + f'★1:{doc["star1"]:>11,}|★2:{doc["star2"]:>11,}|★3:{doc["star3"]:>11,}{os.linesep}'
     totalPoints = totalPoints + doc["star3"]
   
