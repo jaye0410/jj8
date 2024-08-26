@@ -62,13 +62,13 @@ async def on_ready():
 #######################################
 ## ギルドメンバー指定ユニット育成状況
 ######################################
-@bot.slash_command(name='chk_prepared', description='全ギルドメンバーの指定ユニットの育成状況を取得。')
+@bot.slash_command(name='chk_unit', description='全ギルドメンバーの指定ユニットの育成状況を取得。')
 @option(
   'unit_name',
   description='ユニット名を入力・選択。',
   autocomplete=unit_name_searcher,
 )
-async def chk_prepared(ctx: discord.ApplicationContext, unit_name: str):
+async def chk_unit(ctx: discord.ApplicationContext, unit_name: str):
   await ctx.defer()
 
   ally_code = await existing_user(ctx.author.name)
@@ -125,7 +125,10 @@ async def chk_prepared(ctx: discord.ApplicationContext, unit_name: str):
     
     level_before = dict['gear']
 
-    level = f'G{dict["gear"]}'
+    if dict['gear'] < 10:
+      level = f'G {dict["gear"]}'
+    else:
+      level = f'G{dict["gear"]}'
     result = result + f'{level}: {dict['name']}{os.linesep}'
     count = count + 1
   
