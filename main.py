@@ -9,6 +9,12 @@ from pymongo import MongoClient
 intents = discord.Intents.default()
 bot = discord.Bot()
 
+async def unit_name_searcher(ctx: discord.AutocompleteContext):
+  UNIT_NAME_LIST = list(db['unitName'].distinct('unitNameJp'))
+  return [
+    unit_name for unit_name in UNIT_NAME_LIST if unit_name.startswith(ctx.value)
+  ]
+
 async def status_name_searcher(ctx: discord.AutocompleteContext):
   STATUS_NAME_LIST = list(db['status'].distinct('statusName'))
   return [
@@ -38,8 +44,7 @@ async def get_player_info(ally_code):
   loc = f'https://swgoh.gg/api/player/{ally_code}/'
   header = {"content-type": "application/json"}
   r = requests.get(loc, headers=header)
-  all_data = r.json()
-  player_info = all_data['data']
+  player_info = r.json()
   
   return player_info
 
@@ -53,6 +58,86 @@ async def get_guild_info(guild_id):
 @bot.event
 async def on_ready():
   print('JJ-8 Activated!!')
+
+#######################################
+## ギルドメンバー指定ユニット育成状況
+######################################
+@bot.slash_command(name='chk_prepared', description='全ギルドメンバーの指定ユニットの育成状況を取得。')
+@option(
+  'unit_name',
+  description='ユニット名を入力・選択。',
+  autocomplete=unit_name_searcher,
+)
+async def chk_prepared(ctx: discord.ApplicationContext, unit_name: str):
+  await ctx.defer()
+
+  ally_code = await existing_user(ctx.author.name)
+  if ally_code == '':
+    await ctx.followup.send('```ERROR: 同盟コードの事前登録が必要です。```')
+    return
+  
+  cursor = db['unitName'].find(filter={'unitNameJp': unit_name})
+  for doc in cursor:
+    unit_name_eng = doc['unitNameEng']
+  
+  player_info = await get_player_info(ally_code)
+  guild_info = await get_guild_info(player_info['data']['guild_id'])
+  members = guild_info['members']
+
+  dicts_relic = []
+  dicts_gear = []
+  result: str = ''
+  for member in members:
+    player_info = await get_player_info(member['ally_code'])
+    unit_list = player_info['units']
+    for unit in unit_list:
+      target = unit['data']['name']
+      if unit_name_eng.lower() == target.lower():
+        if unit['data']['relic_tier'] - 2 < 1:
+          dicts_gear.append(
+            {'name': player_info["data"]["name"],
+            'gear': unit['data']['gear_level']
+            })
+        else:
+          dicts_relic.append(
+            {'name': player_info["data"]["name"],
+            'gear': unit['data']['relic_tier'] - 2
+            })
+        break
+
+  level_before = -999
+  sorted_dicts_relic = sorted(dicts_relic, key=lambda x:x['gear'], reverse=True)
+  sorted_dicts_gear = sorted(dicts_gear, key=lambda x:x['gear'], reverse=True)
+  count = 0
+  for dict in sorted_dicts_relic:
+    if dict['gear'] != level_before:
+      result = result + f'----------{os.linesep}'
+    
+    level_before = dict['gear']
+
+    level = f'R {dict["gear"]}'
+    result = result + f'{level}: {dict['name']}{os.linesep}'
+    count = count + 1
+  
+  for dict in sorted_dicts_gear:
+    if dict['gear'] != level_before:
+      result = result + f'----------{os.linesep}'
+    
+    level_before = dict['gear']
+
+    level = f'G{dict["gear"]}'
+    result = result + f'{level}: {dict['name']}{os.linesep}'
+    count = count + 1
+  
+  guild_member_count = guild_info["member_count"]
+  my_embed = discord.Embed(
+    title=f'ギルド {player_info["data"]["guild_name"]} ({guild_member_count})',
+    description=f'{unit_name} 所持: {count}/{guild_member_count}',
+    color=0x00ff00)
+  
+  await ctx.send(f'```{result}```')
+  await ctx.followup.send(embed=my_embed)
+
 
 #######################################
 ## RoteTB シミュレータ
@@ -73,7 +158,7 @@ async def simulate_tb(ctx: discord.ApplicationContext, phase: int):
   
   player_info = await get_player_info(ally_code)
 
-  guild_info = await get_guild_info(player_info['guild_id'])
+  guild_info = await get_guild_info(player_info['data']['guild_id'])
   guild_name = guild_info['name']
   guild_gp = guild_info['galactic_power']
   
@@ -123,8 +208,8 @@ async def register_ally_code(ctx: discord.ApplicationContext, ally_code: str):
     return
 
   player_info = await get_player_info(ally_code)
-  guild_id = player_info['guild_id']
-  guild_name = player_info['guild_name']
+  guild_id = player_info['data']['guild_id']
+  guild_name = player_info['data']['guild_name']
 
   db['player'].insert_one(
     {
@@ -172,13 +257,13 @@ async def get_members_ally_code(ctx: discord.ApplicationContext):
     return
   
   player_info = await get_player_info(ally_code)
-  guild_id = player_info["guild_id"]
+  guild_id = player_info['data']["guild_id"]
 
   guild_info = await get_guild_info(guild_id)
   members = guild_info['members']
 
   my_embed = discord.Embed(
-    title=f'ギルド名: {player_info["guild_name"]}{os.linesep}ギルドID: {guild_id}',
+    title=f'ギルド名: {player_info["data"]["guild_name"]}{os.linesep}ギルドID: {guild_id}',
     description='',
     color=0x00ff00)
   
