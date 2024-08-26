@@ -25,6 +25,15 @@ async def get_phase_list(ctx: discord.AutocompleteContext):
     phase for phase in ['1', '2', '3', '4', '5', '6'] if phase == ctx.value
   ]
 
+async def existing_user(user_name: str):
+  cursor = db['player'].find(filter={'userName': user_name})
+  
+  ally_code: str = ''
+  for doc in cursor:
+    ally_code = doc['allyCode']
+  
+  return ally_code
+
 async def get_player_info(ally_code):
   loc = f'https://swgoh.gg/api/player/{ally_code}/'
   header = {"content-type": "application/json"}
@@ -56,12 +65,8 @@ async def on_ready():
 )
 async def simulate_tb(ctx: discord.ApplicationContext, phase: int):
   await ctx.defer()
-  cursor = db['player'].find(filter={'userName': ctx.author.name})
   
-  ally_code: str = ''
-  for doc in cursor:
-    ally_code = doc['allyCode']
-  
+  ally_code = await existing_user(ctx.author.name)
   if ally_code == '':
     await ctx.followup.send('```ERROR: 同盟コードの事前登録が必要です。```')
     return
@@ -110,7 +115,6 @@ async def simulate_tb(ctx: discord.ApplicationContext, phase: int):
 async def register_ally_code(ctx: discord.ApplicationContext, ally_code: str):
   await ctx.defer()
 
-  # update({"name": "hoge"}, {"$set": {"age": 25}})
   count: int = db['player'].count_documents(
     filter={'allyCode': ally_code}
   )
@@ -162,12 +166,7 @@ async def unregister_ally_code(ctx: discord.ApplicationContext, ally_code: str):
 async def get_members_ally_code(ctx: discord.ApplicationContext):
   await ctx.defer()
 
-  cursor = db['player'].find(filter={'userName': ctx.author.name})
-  
-  ally_code: str = ''
-  for doc in cursor:
-    ally_code = doc['allyCode']
-  
+  ally_code = await existing_user(ctx.author.name)
   if ally_code == '':
     await ctx.followup.send('```ERROR: 同盟コードの事前登録が必要です。```')
     return
@@ -175,9 +174,6 @@ async def get_members_ally_code(ctx: discord.ApplicationContext):
   player_info = await get_player_info(ally_code)
   guild_id = player_info["guild_id"]
 
-  # loc = f'https://swgoh.gg/api/guild-profile/{guild_id}/'
-  # r = requests.get(loc, headers=header)
-  # all_data = r.json()
   guild_info = await get_guild_info(guild_id)
   members = guild_info['members']
 
