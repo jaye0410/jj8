@@ -62,13 +62,13 @@ async def on_ready():
 #######################################
 ## ギルドメンバー指定ユニット育成状況
 ######################################
-@bot.slash_command(name='chk_unit', description='全ギルドメンバーの指定ユニットの育成状況を取得。')
+@bot.slash_command(name='g-unit', description='全ギルドメンバーの指定ユニットの育成状況を取得。')
 @option(
   'unit_name',
   description='ユニット名を入力・選択。',
   autocomplete=unit_name_searcher,
 )
-async def chk_unit(ctx: discord.ApplicationContext, unit_name: str):
+async def _g_unit(ctx: discord.ApplicationContext, unit_name: str):
   await ctx.defer()
 
   ally_code = await existing_user(ctx.author.name)
@@ -145,13 +145,13 @@ async def chk_unit(ctx: discord.ApplicationContext, unit_name: str):
 #######################################
 ## RoteTB シミュレータ
 ######################################
-@bot.slash_command(name='rotetb', description='RotE TBの指定フェーズをシミュレートします。')
+@bot.slash_command(name='tb-rote', description='RotE TBの指定フェーズをシミュレートします。')
 @option(
   'phase',
   description='フェーズを入力・選択。',
   autocomplete=get_phase_list,
 )
-async def simulate_tb(ctx: discord.ApplicationContext, phase: int):
+async def _tb_rote(ctx: discord.ApplicationContext, phase: int):
   await ctx.defer()
   
   ally_code = await existing_user(ctx.author.name)
