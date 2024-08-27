@@ -298,10 +298,10 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
   try:
     if category is None or category == '':
       cursor = db['status'].find(
-        filter={'statusName': status_name, 'category': 'c'})
+        filter={'statusName': status_name, 'category': 'c'}).sort({'unitName': 1})
     else:
       cursor = db['status'].find(
-        filter={'statusName': status_name, 'category': category})
+        filter={'statusName': status_name, 'category': category}).sort({'unitName': 1})
 
     my_embed: discord.Embed = None
     i: int = 0
@@ -312,7 +312,13 @@ async def find_status(ctx: discord.ApplicationContext, status_name: str, categor
       if my_embed is None:
         title = f'__{doc["statusName"]}__ ({doc["statusType"]})'
 
+      tmp_line = f'```{doc["unitName"]} ({doc["skillType"]}) {doc["skillName"]}```'
+      if len(line + tmp_line) > 2000:
+        await ctx.send(line)
+        line = ''
+      
       line = line + f'```{doc["unitName"]} ({doc["skillType"]}) {doc["skillName"]}```'
+       
       i = i + 1
     
   except StopIteration:
