@@ -77,8 +77,13 @@ async def _g_unit(ctx: discord.ApplicationContext, unit_name: str):
     return
   
   cursor = db['unitName'].find(filter={'unitNameJp': unit_name})
+  unit_name_eng: str = ""
   for doc in cursor:
     unit_name_eng = doc['unitNameEng']
+  
+  if (unit_name_eng == ""):
+    await ctx.followup.send(f'```ERROR: 入力された「{unit_name}」は、ユニット名候補の一覧に存在しませんでした。```')
+    return
   
   player_info = await get_player_info(ally_code)
   guild_info = await get_guild_info(player_info['data']['guild_id'])
@@ -137,7 +142,8 @@ async def _g_unit(ctx: discord.ApplicationContext, unit_name: str):
     title=f'ギルド {player_info["data"]["guild_name"]} ({guild_member_count})',
     description=f'{unit_name} 所持: {count}/{guild_member_count}',
     color=0x00ff00)
-  
+  if count == 0:
+    result = f'ギルド内に{unit_name}の所持者はいませんでした。'
   await ctx.send(f'```{result}```')
   await ctx.followup.send(embed=my_embed)
 
