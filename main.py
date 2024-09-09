@@ -216,7 +216,12 @@ async def register_ally_code(ctx: discord.ApplicationContext, ally_code: str):
     await ctx.followup.send('```ERROR: 登録済の同盟コードです！```')
     return
 
+  player_info = ""  #まず初期化
   player_info = await get_player_info(ally_code)
+  if player_info == "":
+    await ctx.followup.send('```ERROR: 存在しない同盟コードです！```')
+    return
+
   guild_id = player_info['data']['guild_id']
   guild_name = player_info['data']['guild_name']
 
