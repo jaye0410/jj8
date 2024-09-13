@@ -10,7 +10,7 @@ intents = discord.Intents.default()
 bot = discord.Bot()
 
 async def unit_name_searcher(ctx: discord.AutocompleteContext):
-  UNIT_NAME_LIST = list(db['unitName'].distinct('unitNameJp'))
+  UNIT_NAME_LIST = list(db['unitName'].distinct('searchName'))
   return [
     unit_name for unit_name in UNIT_NAME_LIST if unit_name.startswith(ctx.value)
   ]
@@ -62,7 +62,7 @@ async def on_ready():
 #######################################
 ## ギルドメンバー指定ユニット育成状況
 ######################################
-@bot.slash_command(name='g-unit', description='全ギルドメンバーの指定ユニットの育成状況を取得。')
+@bot.slash_command(name='gunit', description='全ギルドメンバーの指定ユニットの育成状況を取得。')
 @option(
   'unit_name',
   description='ユニット名を入力・選択。',
@@ -76,10 +76,12 @@ async def _g_unit(ctx: discord.ApplicationContext, unit_name: str):
     await ctx.followup.send('```ERROR: 同盟コードの事前登録が必要です。```')
     return
   
-  cursor = db['unitName'].find(filter={'unitNameJp': unit_name})
+  cursor = db['unitName'].find(filter={'searchName': unit_name})
   unit_name_eng: str = ""
+  unit_name_jp: str = ""
   for doc in cursor:
     unit_name_eng = doc['unitNameEng']
+    unit_name_jp = doc['unitNameJp']
   
   if (unit_name_eng == ""):
     await ctx.followup.send(f'```ERROR: 入力された「{unit_name}」は、ユニット名候補の一覧に存在しませんでした。```')
@@ -140,10 +142,10 @@ async def _g_unit(ctx: discord.ApplicationContext, unit_name: str):
   guild_member_count = guild_info["member_count"]
   my_embed = discord.Embed(
     title=f'ギルド {player_info["data"]["guild_name"]} ({guild_member_count})',
-    description=f'{unit_name} 所持: {count}/{guild_member_count}',
+    description=f'{unit_name_jp} 所持: {count}/{guild_member_count}',
     color=0x00ff00)
   if count == 0:
-    result = f'ギルド内に{unit_name}の所持者はいませんでした。'
+    result = f'ギルド内に{unit_name_jp}の所持者はいませんでした。'
   await ctx.send(f'```{result}```')
   await ctx.followup.send(embed=my_embed)
 
